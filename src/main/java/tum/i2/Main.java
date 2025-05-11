@@ -8,7 +8,9 @@ import tum.i2.common.VirtualMachine;
 public class Main {
     public static void main(String[] args) throws IOException {
         VirtualMachine machine = Helpers.fromCMaCodeFile("src/main/resources/example.cma");
-        machine.run();
+        int value = machine.run();
+
+        System.out.println("VM existed with code " + value);
     }
 }
 

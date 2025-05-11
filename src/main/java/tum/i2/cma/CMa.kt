@@ -1,41 +1,185 @@
-package tum.i2.cma;
+package tum.i2.cma
 
-import tum.i2.common.VirtualMachine;
+import tum.i2.common.VirtualMachine
 
-public class CMa implements VirtualMachine {
-    // TODO
-    // Describe the CMa architecture here
+class CMa(
+    private val instructions: List<CMaInstruction>
+) : VirtualMachine {
 
-    public CMa(CMaInstruction[] instructions) {
-        // TODO Initialize the CMa architecture here
+    private companion object {
+        private const val MEMORY_SIZE = 200
     }
 
-    @Override
-    public void step() {
-        // TODO Implement one execution step
+    val mem = IntArray(MEMORY_SIZE)
 
+    var pc = 0
+    var sp = -1
+    var np = 0
+
+    override fun step(): Boolean {
+        val ir = instructions[pc]
+        pc++
+
+        if (ir.type == CMaMiscInstruction.HALT) return false
+        execute(ir)
+        return pc < instructions.size
     }
 
-    @Override
-    public int run() {
-        // TODO Implement the main loop of the VM
-        // as introduced in the lecture
-        // We have defined the step() method here,
-        // because it might make it easier to debug,
-        // and would be required if you wish to implement
-        // an interface with step function
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    public void execute(CMaInstruction instruction) {
-        // CMaInstructionType enum contains comments,
-        // describing where the operations are defined
-        switch (instruction.getType()) {
-            // TODO Implement the instruction set as far as introduced
-            default:
-                throw new UnsupportedOperationException("Unknown instruction type: " + instruction.getType());
+    override fun run(): Int {
+        while (true) {
+            val cont = step()
+            if (!cont) {
+                return if (sp >= 0 && sp < MEMORY_SIZE) {
+                    stackPeek()
+                } else {
+                    -1
+                }
+            }
         }
     }
 
-    // TODO: If you wish, you can implement each instruction as a method
+    fun execute(instruction: CMaInstruction) {
+        // CMaInstructionType enum contains comments,
+        // describing where the operations are defined
+        when (val type = instruction.type) {
+            CMaMiscInstruction.LOADC -> {
+                loadC(instruction.firstArg)
+            }
+
+            CMaMiscInstruction.LOAD -> {
+                load()
+            }
+
+            CMaMiscInstruction.STORE -> {
+                store()
+            }
+
+            CMaMiscInstruction.LOADA -> {
+                loadC(instruction.firstArg)
+                load()
+            }
+
+            CMaMiscInstruction.STOREA -> {
+                loadC(instruction.firstArg)
+                store()
+            }
+
+            CMaMiscInstruction.POP -> {
+                stackPop()
+            }
+
+            CMaMiscInstruction.JUMP -> {
+                jump(instruction.firstArg)
+            }
+
+            CMaMiscInstruction.JUMPZ -> {
+                jumpz(instruction.firstArg)
+            }
+
+            CMaMiscInstruction.JUMPI -> {
+                jumpi(instruction.firstArg)
+            }
+
+            CMaMiscInstruction.DUP -> {
+                dup()
+            }
+
+            CMaMiscInstruction.ALLOC -> {
+                stackAlloc(instruction.firstArg)
+            }
+
+            CMaMiscInstruction.NEW -> {
+                new()
+            }
+
+            is CmaBinaryInstruction -> {
+                binary(type)
+            }
+
+            is CmaUnaryInstruction -> {
+                unary(type)
+            }
+
+            else -> throw UnsupportedOperationException("Unknown instruction type: " + instruction.type)
+        }
+    }
+
+    private fun loadC(arg: Int) {
+        stackPush(arg)
+    }
+
+    private fun load() {
+        val address = stackPeek()
+        val value = mem[address]
+        stackHeadReplace(value)
+    }
+
+    private fun store() {
+        val address = stackPop()
+        val value = stackPeek()
+
+        mem[address] = value
+    }
+
+    private fun dup() {
+        val value = stackPeek()
+        stackPush(value)
+    }
+
+    private fun binary(type: CmaBinaryInstruction) {
+        val second = stackPop()
+        val first = stackPeek()
+        stackHeadReplace(type.op(first, second))
+    }
+
+    private fun unary(type: CmaUnaryInstruction) {
+        val value = stackPeek()
+        stackHeadReplace(type.op(value))
+    }
+
+    private fun jump(arg: Int) {
+        pc = arg
+    }
+
+    private fun jumpz(arg: Int) {
+        if (stackPop() == 0) {
+            jump(arg)
+        }
+    }
+
+    private fun jumpi(arg: Int) {
+        val offset = stackPop()
+        jump(arg + offset)
+    }
+
+    private fun stackPush(value: Int) {
+        sp++
+        mem[sp] = value
+    }
+
+    private fun stackHeadReplace(value: Int) {
+        mem[sp] = value
+    }
+
+    private fun stackPop(): Int {
+        val value = mem[sp]
+        sp--
+        return value
+    }
+
+    private fun stackPeek(): Int {
+        return mem[sp]
+    }
+
+    private fun stackAlloc(size: Int) {
+        sp += size
+    }
+
+    // HEAP
+
+    private fun new() {
+        val size = stackPeek()
+        np -= size
+        stackHeadReplace(np)
+    }
 }

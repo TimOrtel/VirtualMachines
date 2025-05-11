@@ -1,6 +1,6 @@
 package tum.i2.common;
 
 public interface VirtualMachine {
-    public void step();
-    public int run();
+    boolean step();
+    int run();
 }
