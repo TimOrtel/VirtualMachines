@@ -1,0 +1,39 @@
+enter 4
+alloc 1
+mark
+loadc MAIN
+call
+slide 0
+halt
+
+MAIN: enter 5
+loadc 5
+mark
+loadc FAC
+call
+slide 0
+storer -3
+return
+
+FAC: enter 5
+loadr -3
+loadc 0
+leq
+jumpz A
+loadc 1
+storer -3
+return
+jump B
+A: loadr -3
+loadr -3
+loadc 1
+sub
+mark
+loadc FAC
+call
+slide 0
+mul
+storer -3
+return
+B: return
+pop 5

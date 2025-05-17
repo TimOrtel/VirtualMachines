@@ -14,58 +14,57 @@ class CMa(
 
     var pc = 0
     var sp = -1
-    var np = 0
+    var np = MEMORY_SIZE - 1
 
-    override fun step(): Boolean {
+    var ep = -1
+    var fp = -1
+
+    override fun step(): Int? {
         val ir = instructions[pc]
         pc++
 
-        if (ir.type == CMaMiscInstruction.HALT) return false
-        execute(ir)
-        return pc < instructions.size
+        return execute(ir)
     }
 
     override fun run(): Int {
         while (true) {
-            val cont = step()
-            if (!cont) {
-                return if (sp >= 0 && sp < MEMORY_SIZE) {
-                    stackPeek()
-                } else {
-                    -1
-                }
+            val value = step()
+            if (value != null) {
+                return value
             }
         }
     }
 
-    fun execute(instruction: CMaInstruction) {
-        // CMaInstructionType enum contains comments,
-        // describing where the operations are defined
+    fun execute(instruction: CMaInstruction): Int? {
         when (val type = instruction.type) {
             CMaMiscInstruction.LOADC -> {
                 loadC(instruction.firstArg)
             }
 
             CMaMiscInstruction.LOAD -> {
-                load()
+                load(instruction.firstArg)
             }
 
             CMaMiscInstruction.STORE -> {
-                store()
+                store(instruction.firstArg)
             }
 
             CMaMiscInstruction.LOADA -> {
                 loadC(instruction.firstArg)
-                load()
+                load(1)
             }
 
             CMaMiscInstruction.STOREA -> {
                 loadC(instruction.firstArg)
-                store()
+                store(1)
             }
 
             CMaMiscInstruction.POP -> {
-                stackPop()
+                if (instruction.args.size == 1) {
+                    sp -= instruction.firstArg
+                } else {
+                    stackPop()
+                }
             }
 
             CMaMiscInstruction.JUMP -> {
@@ -100,25 +99,72 @@ class CMa(
                 unary(type)
             }
 
-            else -> throw UnsupportedOperationException("Unknown instruction type: " + instruction.type)
+            CMaMiscInstruction.MARK -> {
+                mark()
+            }
+
+            CMaMiscInstruction.CALL -> {
+                call()
+            }
+
+            CMaMiscInstruction.ENTER -> {
+                enter(instruction.firstArg)
+            }
+
+            CMaMiscInstruction.SLIDE -> {
+                slide(instruction.firstArg)
+            }
+
+            CMaMiscInstruction.RETURN -> {
+                `return`()
+            }
+
+            CMaMiscInstruction.LOADR -> {
+                loadrc(instruction.firstArg)
+                load(1)
+            }
+
+            CMaMiscInstruction.STORER -> {
+                loadrc(instruction.firstArg)
+                store(1)
+            }
+
+            CMaMiscInstruction.LOADRC -> {
+                loadrc(instruction.firstArg)
+            }
+
+            CMaMiscInstruction.HALT -> {
+                return mem[0]
+            }
         }
+
+        return null
     }
 
     private fun loadC(arg: Int) {
         stackPush(arg)
     }
 
-    private fun load() {
-        val address = stackPeek()
-        val value = mem[address]
-        stackHeadReplace(value)
+    private fun loadrc(arg: Int) {
+        stackPush(arg + fp)
     }
 
-    private fun store() {
-        val address = stackPop()
-        val value = stackPeek()
+    private fun load(num: Int) {
+        val address = stackPeek()
+        for (i in 0 until num) {
+            mem[sp + i] = mem[address + i]
+        }
+        sp += num - 1
+    }
 
-        mem[address] = value
+    private fun store(num: Int) {
+        val address = stackPeek()
+
+        for (i in 0 until num) {
+            mem[address + i] = mem[sp - num + i]
+        }
+
+        stackPop()
     }
 
     private fun dup() {
@@ -181,5 +227,40 @@ class CMa(
         val size = stackPeek()
         np -= size
         stackHeadReplace(np)
+    }
+
+    // Function calling
+
+    private fun mark() {
+        stackPush(ep)
+        stackPush(fp)
+    }
+
+    private fun call() {
+        val address = stackPeek()
+        stackHeadReplace(pc)
+        fp = sp
+        pc = address
+    }
+
+    private fun slide(m: Int) {
+        // Sliding with 0 does nothing
+        if (m == 0) return
+        val head = stackPop()
+        sp -= m
+        stackHeadReplace(head)
+    }
+
+    private fun enter(q: Int) {
+        ep = sp + q
+        if (ep >= np) throw RuntimeException("Stack overflow")
+    }
+
+    private fun `return`() {
+        pc = mem[fp]
+        ep = mem[fp - 2]
+        if (ep >= np) throw RuntimeException("Stack overflow")
+        sp = fp - 3
+        fp = mem[sp + 2]
     }
 }

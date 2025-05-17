@@ -1,0 +1,22 @@
+loadc 5
+new
+loadc 10
+loada 0
+loadc 1
+add
+store 1
+pop
+
+loada 0
+load 5
+pop
+loadc 15
+loada 0
+store 5
+
+loada 0
+loadc 4
+add
+load 1
+storea 0
+halt

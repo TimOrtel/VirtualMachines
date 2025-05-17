@@ -1,14 +1,7 @@
 package tum.i2.cma
 
-import tum.i2.cma.CMaMiscInstruction.ALLOC
-import tum.i2.cma.CMaMiscInstruction.JUMP
-import tum.i2.cma.CMaMiscInstruction.JUMPI
-import tum.i2.cma.CMaMiscInstruction.JUMPZ
-import tum.i2.cma.CMaMiscInstruction.LOAD
-import tum.i2.cma.CMaMiscInstruction.LOADA
-import tum.i2.cma.CMaMiscInstruction.LOADC
-import tum.i2.cma.CMaMiscInstruction.STORE
-import tum.i2.cma.CMaMiscInstruction.STOREA
+import tum.i2.cma.CMaMiscInstruction.*
+
 import java.util.*
 
 sealed interface CMaInstructionType {
@@ -40,7 +33,7 @@ sealed interface CMaInstructionType {
         @JvmStatic
         fun expectedNumberOfArguments(type: CMaInstructionType): Int {
             when (type) {
-                LOADC, LOAD, STORE, LOADA, STOREA, JUMP, JUMPZ, JUMPI, ALLOC -> return 1
+                LOADC, LOAD, STORE, LOADA, STOREA, JUMP, JUMPZ, JUMPI, ALLOC, LOADRC, STORER, ENTER, SLIDE, LOADR -> return 1
                 else -> return 0
             }
         }
@@ -88,6 +81,9 @@ enum class CMaMiscInstruction : CMaInstructionType {
     STORE,
     LOADA,
     STOREA,
+    LOADR,
+    STORER,
+    LOADRC,
 
     // Statements (as introduced in Statements and Statement Sequences)
     POP,
@@ -104,6 +100,14 @@ enum class CMaMiscInstruction : CMaInstructionType {
     ALLOC,
 
     NEW,
+
+
+    // Function stuff
+    MARK,
+    CALL,
+    ENTER,
+    RETURN,
+    SLIDE
 
     ;
 }

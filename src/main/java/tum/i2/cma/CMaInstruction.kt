@@ -1,29 +1,15 @@
-package tum.i2.cma;
+package tum.i2.cma
 
-public class CMaInstruction {
-    private CMaInstructionType cMaInstructionType;
-    private int[] args;
+import tum.i2.cma.CMaInstructionType.Companion.expectedNumberOfArguments
 
-    public CMaInstruction(CMaInstructionType cMaInstructionType, int[] args) {
-        this.cMaInstructionType = cMaInstructionType;
-        this.args = args;
+class CMaInstruction(val type: CMaInstructionType, val args: IntArray) {
+    val firstArg: Int
+        get() = args[0]
+
+    fun hasRightNumberOfArguments(): Boolean {
+        return when (type) {
+            CMaMiscInstruction.POP -> args.size <= 1
+            else -> args.size == expectedNumberOfArguments(this.type)
+        }
     }
-
-    public CMaInstructionType getType() {
-        return cMaInstructionType;
-    }
-
-    public int[] getArgs() {
-        return args;
-    }
-
-    public int getFirstArg() {
-        return args[0];
-    }
-
-    public boolean hasRightNumberOfArguments() {
-        return args.length == CMaInstructionType.expectedNumberOfArguments(cMaInstructionType);
-    }
-
-
 }
